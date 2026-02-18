@@ -277,10 +277,10 @@ const writeSheet = (fiddler, form) => {
   return fiddler
 
 }
-const main = () => {
+export const mainExample = (max = Infinity) => {
   timers.start('main')
   // find dups by md5
-  const max = Infinity
+
 
   // start by building a map of all folders owned by me
   // doing it like this turns out to be more efficient that recursing once files are found
@@ -317,5 +317,3 @@ const main = () => {
   console.log('...results in', fiddler.getSheet().getParent().getUrl())
   timers.end('main')
 }
-// on node we need to launch it
-if (ScriptApp.isFake) main()
