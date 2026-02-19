@@ -2,26 +2,60 @@ import { mainExample } from './example.js';
 
 const runJob = async () => {
   console.log('--- Starting Job Execution ---');
-  // set this to maximum amount of files to look at for testing - default is Infinity
-  const max = 1000
+  const max = 1000;
   try {
     await mainExample(max);
-    console.log('--- Test execution completed successfully ---');
+    console.log('--- Job Completed Successfully ---');
   } catch (error) {
-    console.error('--- Test execution failed ---');
+    console.error('--- Job Failed ---');
     console.error(error);
     throw error;
   }
 };
 
-// This is the "Official" Lambda entry point
-export const handler = async (event) => {
-  await runJob();
-  return { statusCode: 200, body: "Done" };
+/**
+ * The "Official" Custom Runtime Logic for AWS Lambda
+ * This prevents Init Timeouts and unwanted retries.
+ */
+const lambdaRuntimeLoop = async () => {
+  const runtimeApi = process.env.AWS_LAMBDA_RUNTIME_API;
+  
+  while (true) {
+    // 1. Tell Lambda we are ready and wait for a trigger
+    const result = await fetch(`http://${runtimeApi}/2018-06-01/runtime/invocation/next`);
+    const requestId = result.headers.get('lambda-runtime-aws-request-id');
+    
+    console.log(`--- Processing Lambda Request: ${requestId} ---`);
+    
+    try {
+      // 2. Do the actual work (now in the 'Invoke' phase, not 'Init')
+      await runJob();
+      
+      // 3. Tell Lambda we are finished
+      await fetch(`http://${runtimeApi}/2018-06-01/runtime/invocation/${requestId}/response`, {
+        method: 'POST',
+        body: JSON.stringify({ success: true })
+      });
+    } catch (error) {
+      // Report error to Lambda
+      await fetch(`http://${runtimeApi}/2018-06-01/runtime/invocation/${requestId}/error`, {
+        method: 'POST',
+        body: JSON.stringify({ errorMessage: error.message, errorType: 'JobError' })
+      });
+    }
+  }
 };
 
-// If running in Cloud Run, K8s, or Local (not Lambda)
-// we execute immediately
-if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
-  runJob().then(() => process.exit(0)).catch(() => process.exit(1));
+// Execution logic based on environment
+if (process.env.AWS_LAMBDA_RUNTIME_API) {
+  console.log('--- Initializing Lambda Runtime ---');
+  lambdaRuntimeLoop().catch(err => {
+    console.error('Critical Runtime Error:', err);
+    process.exit(1);
+  });
+} else {
+  // Standard execution for Cloud Run, K8s, or Local
+  runJob()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
 }

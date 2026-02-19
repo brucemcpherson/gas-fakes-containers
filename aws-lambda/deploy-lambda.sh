@@ -125,17 +125,12 @@ aws lambda update-function-configuration --function-name "$LAMBDA_NAME" \
     --memory-size 2048 \
     --environment "$ENV_JSON" >/dev/null
 
-aws lambda put-function-event-invoke-config --function-name "$LAMBDA_NAME" --region "$AWS_REGION" --maximum-retry-attempts 0 >/dev/null
-
 # --- 7. INVOKE AND MONITOR ---
 echo "--- Waiting for readiness ---"
 aws lambda wait function-updated --function-name "$LAMBDA_NAME" --region "$AWS_REGION"
 
-echo "--- Invoking Lambda Function (Asynchronously) ---"
-aws lambda invoke --function-name "$LAMBDA_NAME" \
-    --region "$AWS_REGION" \
-    --invocation-type Event \
-    response.json >/dev/null
+echo "--- Invoking Lambda Function ---"
+aws lambda invoke --function-name "$LAMBDA_NAME" --region "$AWS_REGION" response.json
 
 echo "--- Tailing Logs (Ctrl+C to stop) ---"
 aws logs tail "/aws/lambda/$LAMBDA_NAME" --follow --region "$AWS_REGION"
