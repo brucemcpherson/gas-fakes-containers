@@ -1,4 +1,7 @@
 **/.env*
 **/node_modules
 **/private
-**/gasfakes.json  
+**/gasfakes.json
+kubernetes.yaml
+**/.google-credentials.json
+  
