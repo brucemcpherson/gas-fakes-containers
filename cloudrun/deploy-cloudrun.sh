@@ -48,6 +48,11 @@ fi
 REGION="europe-west1"
 JOB_NAME="gas-fakes-job"
 REPO_NAME="gas-fakes-repo"
+
+# Ensure GOOGLE_CLOUD_PROJECT is set
+if [ -z "$GOOGLE_CLOUD_PROJECT" ]; then
+    GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)
+fi
 IMAGE_PATH="$REGION-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/$REPO_NAME/$JOB_NAME"
 
 # Ensure the Artifact Registry repository exists

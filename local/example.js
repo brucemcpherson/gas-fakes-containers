@@ -274,6 +274,7 @@ export const mainExample = (max = Infinity) => {
   timers.start('main')
   // find dups by md5
 
+
   // we're using live apps script libraries as well!
   if (ScriptApp.isFake) {
     // Load all libraries from the project manifest
@@ -316,3 +317,5 @@ export const mainExample = (max = Infinity) => {
   console.log('...results in', fiddler.getSheet().getParent().getUrl())
   timers.end('main')
 }
+
+mainExample()

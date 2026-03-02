@@ -1,0 +1,36 @@
+steps:
+  # 1. Build the image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-t', '$_IMAGE_PATH', 
+      '-f', 'Dockerfile', 
+      '.'
+    ]
+
+  # 2. Push to Azure ACR
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Tag for Azure ACR
+        docker tag $_IMAGE_PATH $_ACR_NAME.azurecr.io/$_REPO_NAME:latest
+        
+        # Login to Azure ACR using Service Principal
+        docker login $_ACR_NAME.azurecr.io -u $$AZURE_CLIENT_ID -p $$AZURE_CLIENT_SECRET
+        
+        # Push to Azure ACR
+        docker push $_ACR_NAME.azurecr.io/$_REPO_NAME:latest
+    secretEnv: ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET']
+
+# Pull secrets from Secret Manager
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/AZURE_CLIENT_ID/versions/latest
+    env: 'AZURE_CLIENT_ID'
+  - versionName: projects/$PROJECT_ID/secrets/AZURE_CLIENT_SECRET/versions/latest
+    env: 'AZURE_CLIENT_SECRET'
+
+images:
+  - '$_IMAGE_PATH'

@@ -6,11 +6,11 @@
     "@mcpher/gas-fakes": "latest"
   },
   "type": "module",
-  "name": "gas-fakes-cloudrun",
-  "version": "1.0.1",
+  "name": "gas-fakes-lambda",
+  "version": "1.0.2",
   "license": "MIT",
   "main": "cloudrun.js",
-  "description": "example gas-fakes on cloud run",
-  "repository": "github:brucemcpherson/gas-fakes",
+  "description": "example gas-fakes on aws lambda",
+  "repository": "github:brucemcpherson/gas-fakes-containers",
   "homepage": "https://ramblings.mcpher.com/a-proof-of-concept-implementation-of-apps-script-environment-on-node/"
 }

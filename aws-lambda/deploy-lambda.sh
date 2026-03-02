@@ -15,10 +15,10 @@ if [ ! -f ".env" ]; then
 fi
 
 # GCP CONFIG
-GCP_PROJECT_ID=$(gcloud config get-value project)
+GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)
 GCP_REGION="europe-west1"
 GCP_REPO_NAME="gas-fakes-repo" 
-IMAGE_PATH="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_REPO_NAME/$LAMBDA_NAME"
+IMAGE_PATH="$GCP_REGION-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/$GCP_REPO_NAME/$LAMBDA_NAME"
 IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}"
 
 # GCP WIF Config
@@ -27,10 +27,10 @@ GCP_PROVIDER_ID="aws-provider"
 
 # Auto-detect GSA from local .env
 GSA_NAME=$(grep "GOOGLE_SERVICE_ACCOUNT_NAME" .env | cut -d'=' -f2 | tr -d '"\r')
-GSA_EMAIL="${GSA_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
-PROJECT_NUMBER=$(gcloud projects describe "$GCP_PROJECT_ID" --format='value(projectNumber)')
+GSA_EMAIL="${GSA_NAME}@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
+PROJECT_NUMBER=$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')
 
-echo "--- Using GCP Project: $GCP_PROJECT_ID ---"
+echo "--- Using GCP Project: $GOOGLE_CLOUD_PROJECT ---"
 echo "--- Using GSA: $GSA_EMAIL ---"
 
 # --- 2. GENERATE HIDDEN GCP CREDENTIALS CONFIG ---
@@ -116,7 +116,7 @@ JSON_VARS=$(awk -F'=' '/^[^#]/ {
     printf "\"%s\":\"%s\",", key, val
 }' .env)
 
-ENV_JSON="{\"Variables\":{\"GOOGLE_APPLICATION_CREDENTIALS\":\"/usr/src/app/google-credentials.json\",\"GCP_PROJECT_ID\":\"$GCP_PROJECT_ID\",\"GOOGLE_WORKSPACE_SUBJECT\":\"$GOOGLE_WORKSPACE_SUBJECT\",$JSON_VARS}}"
+ENV_JSON="{\"Variables\":{\"GOOGLE_APPLICATION_CREDENTIALS\":\"/usr/src/app/google-credentials.json\",\"GOOGLE_CLOUD_PROJECT\":\"$GOOGLE_CLOUD_PROJECT\",\"GOOGLE_WORKSPACE_SUBJECT\":\"$GOOGLE_WORKSPACE_SUBJECT\",$JSON_VARS}}"
 ENV_JSON=$(echo $ENV_JSON | sed 's/,}/}/')
 
 aws lambda update-function-configuration --function-name "$LAMBDA_NAME" \
@@ -129,8 +129,14 @@ aws lambda update-function-configuration --function-name "$LAMBDA_NAME" \
 echo "--- Waiting for readiness ---"
 aws lambda wait function-updated --function-name "$LAMBDA_NAME" --region "$AWS_REGION"
 
-echo "--- Invoking Lambda Function ---"
-aws lambda invoke --function-name "$LAMBDA_NAME" --region "$AWS_REGION" response.json
+echo "--- Invoking Lambda Function (Asynchronous) ---"
+aws lambda invoke \
+    --function-name "$LAMBDA_NAME" \
+    --region "$AWS_REGION" \
+    --invocation-type Event \
+    response.json
 
 echo "--- Tailing Logs (Ctrl+C to stop) ---"
+# Add a small sleep to ensure logs have started appearing in CloudWatch
+sleep 2
 aws logs tail "/aws/lambda/$LAMBDA_NAME" --follow --region "$AWS_REGION"

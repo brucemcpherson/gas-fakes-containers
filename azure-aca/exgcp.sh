@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# This script reads the GCP_PROJECT_ID from a .env file
-# and exports it as GOOGLE_CLOUD_PROJECT for the current shell session.
+# This script reads the GOOGLE_CLOUD_PROJECT from a .env file
+# and exports it for the current shell session.
 #
 # Usage: source . ./exgcp.sh
 
@@ -16,11 +16,12 @@ if [ ! -f "$ENV_FILE" ]; then
   return 1
 fi
 
-# Read the GCP_PROJECT_ID, remove quotes, and handle potential carriage returns
+# Read the GOOGLE_CLOUD_PROJECT, remove quotes, and handle potential carriage returns
 GOOGLE_CLOUD_PROJECT_VALUE=$(grep -E '^GOOGLE_CLOUD_PROJECT=' "$ENV_FILE" | cut -d '=' -f2 | tr -d '"\r')
 GEMINI_API_KEY_VALUE=$(grep -E '^GEMINI_API_KEY=' "$ENV_FILE" | cut -d '=' -f2 | tr -d '"\r')
 GEMINI_MODEL_VALUE=$(grep -E '^GEMINI_MODEL=' "$ENV_FILE" | cut -d '=' -f2 | tr -d '"\r')
 OMDB_API_KEY_VALUE=$(grep -E '^OMDB_API_KEY=' "$ENV_FILE" | cut -d '=' -f2 | tr -d '"\r')
+
 # Check if a value was extracted
 if [ -z "$GOOGLE_CLOUD_PROJECT_VALUE" ]; then
   echo "Error: GOOGLE_CLOUD_PROJECT not found or is empty in $ENV_FILE."
@@ -33,6 +34,8 @@ else
   echo "exported: GEMINI_API_KEY"
   export GEMINI_API_KEY="$GEMINI_API_KEY_VALUE"
 fi  
+
+
 
 if [ -z "OMDB_API_KEY_VALUE" ]; then
   echo "OMDB_API_KEY not found or is empty in $ENV_FILE."

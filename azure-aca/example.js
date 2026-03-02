@@ -1,8 +1,16 @@
 import '@mcpher/gas-fakes';
+import { readFileSync } from 'fs';
 
 // set these 2 to your target sheet  
 const SHEET_ID = '1CJjcBY17t2jdqP8LAJqe8jjje9ZcyuKtY0HJdCXgo2A'
 const SHEET_NAME_ALL = 'dedup-all'
+
+
+// we're using live apps script libraries as well!
+if (ScriptApp.isFake) {
+  // Load all libraries from the project manifest
+  LibHandlerApp.load();
+}
 
 
 // just a utility to measure performance
@@ -273,12 +281,6 @@ const writeSheet = (fiddler, form) => {
 export const mainExample = (max = Infinity) => {
   timers.start('main')
   // find dups by md5
-
-  // we're using live apps script libraries as well!
-  if (ScriptApp.isFake) {
-    // Load all libraries from the project manifest
-    LibHandlerApp.load();
-  }
 
 
   // start by building a map of all folders owned by me
