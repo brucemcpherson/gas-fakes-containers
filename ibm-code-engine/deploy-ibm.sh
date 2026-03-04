@@ -64,12 +64,12 @@ ibmcloud cr namespace-add "$ICR_NAMESPACE" || true
 
 echo "--- Cleaning up old images and job runs ---"
 # Delete all images in the repository to make room for the new build
-ibmcloud cr image-rm "$ICR_DOMAIN/$ICR_NAMESPACE/$REPO_NAME" --force 2>/dev/null || true
+ibmcloud cr image-rm "$ICR_DOMAIN/$ICR_NAMESPACE/$REPO_NAME" >/dev/null 2>&1 || true
 # Also clean up untagged images (dangling)
-ibmcloud cr image-prune --force 2>/dev/null || true
+ibmcloud cr image-prune --force >/dev/null 2>&1 || true
 # Delete all previous job runs to clear run history/logs
 ibmcloud ce project select --name "$CE_PROJECT" 2>/dev/null || true
-for run in $(ibmcloud ce jobrun list --job "$CE_JOB_NAME" --output json 2>/dev/null | jq -r '.[].name // empty'); do
+for run in $(ibmcloud ce jobrun list --job "$CE_JOB_NAME" --output json 2>/dev/null | jq -r '.[]? | objects | .name? // empty'); do
     ibmcloud ce jobrun delete --name "$run" --force 2>/dev/null || true
 done
 
@@ -81,16 +81,16 @@ if ! ibmcloud resource service-instance "$APP_ID_NAME" --output json >/dev/null 
 fi
 
 APP_ID_JSON=$(ibmcloud resource service-instance "$APP_ID_NAME" --output json)
-TENANT_ID=$(echo "$APP_ID_JSON" | jq -r '.[0].guid // .guid')
+TENANT_ID=$(echo "$APP_ID_JSON" | jq -r 'if type=="array" then .[0].guid else .guid end')
 
 # Create a service key if not exists to get credentials
 if ! ibmcloud resource service-key "gas-fakes-key" --output json >/dev/null 2>&1; then
-    ibmcloud resource service-key-create "gas-fakes-key" "Writer" --instance-name "$APP_ID_NAME"
+    ibmcloud resource service-key-create "gas-fakes-key" "Writer" --instance-name "$APP_ID_NAME" >/dev/null
 fi
 KEY_INFO=$(ibmcloud resource service-key "gas-fakes-key" --output json)
-APP_ID_CLIENT_ID=$(echo "$KEY_INFO" | jq -r '.[0].credentials.clientId // .credentials.clientId')
-APP_ID_SECRET=$(echo "$KEY_INFO" | jq -r '.[0].credentials.secret // .credentials.secret')
-APP_ID_OAUTH_URL=$(echo "$KEY_INFO" | jq -r '.[0].credentials.oauthServerUrl // .credentials.oauthServerUrl')
+APP_ID_CLIENT_ID=$(echo "$KEY_INFO" | jq -r 'if type=="array" then .[0].credentials.clientId else .credentials.clientId end')
+APP_ID_SECRET=$(echo "$KEY_INFO" | jq -r 'if type=="array" then .[0].credentials.secret else .credentials.secret end')
+APP_ID_OAUTH_URL=$(echo "$KEY_INFO" | jq -r 'if type=="array" then .[0].credentials.oauthServerUrl else .credentials.oauthServerUrl end')
 
 # --- 4. BUILD & PUSH TO IBM ICR VIA CLOUD BUILD ---
 echo "--- Building and Pushing to ICR (via Cloud Build) ---"
@@ -148,7 +148,7 @@ ibmcloud ce project create --name "$CE_PROJECT" || ibmcloud ce project select --
 
 # Create Registry Secret so Code Engine can pull the image
 IBM_API_KEY=$(gcloud secrets versions access latest --secret="IBM_CLOUD_API_KEY")
-ibmcloud ce registry create --name icr-secret --server "$ICR_DOMAIN" --username iamapikey --password "$IBM_API_KEY" 2>/dev/null || true
+ibmcloud ce registry create --name icr-secret --server "$ICR_DOMAIN" --username iamapikey --password "$IBM_API_KEY" >/dev/null 2>&1 || true
 
 # Prepare Environment Variables
 GOOGLE_WORKSPACE_SUBJECT=$(gcloud config get-value account)

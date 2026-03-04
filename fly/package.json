@@ -1,0 +1,15 @@
+{
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "dependencies": {
+    "@mcpher/gas-fakes": "latest"
+  },
+  "type": "module",
+  "name": "gas-fakes-flyio",
+  "version": "1.0.0",
+  "license": "MIT",
+  "main": "containerrun.js",
+  "description": "example gas-fakes on Fly.io Machines",
+  "repository": "github:brucemcpherson/gas-fakes-containers"
+}
