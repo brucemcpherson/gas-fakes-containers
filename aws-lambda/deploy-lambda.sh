@@ -41,6 +41,17 @@ gcloud iam workload-identity-pools create-cred-config \
     --output-file=".google-credentials.json" \
     --aws >/dev/null
 
+# --- CLEANUP PREVIOUS RUNS ---
+echo "--- Cleaning up previous log streams and images ---"
+# Delete all previous CloudWatch log streams to clear run history
+LOG_GROUP="/aws/lambda/$LAMBDA_NAME"
+for stream in $(aws logs describe-log-streams --log-group-name "$LOG_GROUP" --region "$AWS_REGION" --query 'logStreams[*].logStreamName' --output text 2>/dev/null); do
+    aws logs delete-log-stream --log-group-name "$LOG_GROUP" --log-stream-name "$stream" --region "$AWS_REGION" 2>/dev/null || true
+done
+# Delete old ECR image so the registry stays clean
+aws ecr batch-delete-image --repository-name "$REPO_NAME" --region "$AWS_REGION" \
+    --image-ids imageTag=latest 2>/dev/null || true
+
 # --- 3. BUILD & PUSH TO AWS ECR VIA CLOUD BUILD ---
 echo "--- Building and Pushing to ECR (via Cloud Build) ---"
 gcloud builds submit . \

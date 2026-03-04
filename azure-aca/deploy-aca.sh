@@ -85,6 +85,17 @@ else
     echo "ACR $ACR_NAME already exists."
 fi
 
+# --- CLEANUP PREVIOUS RUNS ---
+echo "--- Cleaning up previous executions and images ---"
+# Delete all previous job executions (clears run history/logs)
+if az containerapp job show --name "$ACA_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
+    for exec in $(az containerapp job execution list --name "$ACA_NAME" --resource-group "$RESOURCE_GROUP" --query '[*].name' -o tsv 2>/dev/null); do
+        az containerapp job execution cancel --name "$ACA_NAME" --resource-group "$RESOURCE_GROUP" --job-execution-name "$exec" 2>/dev/null || true
+    done
+fi
+# Delete old ACR image
+az acr repository delete --name "$ACR_NAME" --image "$REPO_NAME:latest" --yes 2>/dev/null || true
+
 # --- 5. BUILD & PUSH TO AZURE ACR VIA CLOUD BUILD ---
 echo "--- Building and Pushing to ACR (via Cloud Build) ---"
 gcloud builds submit . \

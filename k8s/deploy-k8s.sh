@@ -36,6 +36,10 @@ gcloud artifacts repositories describe "$REPO_NAME" --location="$REGION" >/dev/n
     --location="$REGION" \
     --description="Docker repository for gas-fakes"
 
+# --- CLEANUP PREVIOUS RUNS ---
+echo "--- Cleaning up previous images ---"
+gcloud artifacts docker images delete "$IMAGE_PATH" --quiet 2>/dev/null || true
+
 gcloud builds submit . --config=cloudbuild.yaml --substitutions=_IMAGE_PATH="$IMAGE_PATH"
 
 # 4. Set up Workload Identity

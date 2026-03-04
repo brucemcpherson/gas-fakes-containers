@@ -62,6 +62,15 @@ gcloud artifacts repositories describe "$REPO_NAME" --location="$REGION" >/dev/n
     --location="$REGION" \
     --description="Docker repository for gas-fakes"
 
+# --- CLEANUP PREVIOUS RUNS ---
+echo "--- Cleaning up previous executions and images ---"
+# Delete all previous executions for the job (clears run history/logs)
+for exec in $(gcloud run jobs executions list --job "$JOB_NAME" --region "$REGION" --format='value(metadata.name)' 2>/dev/null); do
+    gcloud run jobs executions delete "$exec" --region "$REGION" --quiet 2>/dev/null || true
+done
+# Delete old images from Artifact Registry
+gcloud artifacts docker images delete "$IMAGE_PATH" --quiet 2>/dev/null || true
+
 gcloud builds submit . --config=cloudbuild.yaml --substitutions=_IMAGE_PATH="$IMAGE_PATH"
 
 # 3. Create or Update Job
