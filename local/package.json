@@ -2,9 +2,6 @@
   "engines": {
     "node": ">=20.11.0"
   },
-  "dependencies": {
-    "@mcpher/gas-fakes": "latest"
-  },
   "type": "module",
   "name": "gas-fakes-local",
   "version": "1.0.2",
@@ -12,5 +9,8 @@
   "main": "cloudrun.js",
   "description": "example gas-fakes on node local",
   "repository": "github:brucemcpherson/gas-fakes-containers",
-  "homepage": "https://ramblings.mcpher.com/a-proof-of-concept-implementation-of-apps-script-environment-on-node/"
+  "homepage": "https://ramblings.mcpher.com/a-proof-of-concept-implementation-of-apps-script-environment-on-node/",
+  "dependencies": {
+    "@mcpher/gas-fakes": "^2.2.0"
+  }
 }
