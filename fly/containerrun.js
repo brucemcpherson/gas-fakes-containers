@@ -1,9 +1,10 @@
 import { writeFile } from 'fs/promises';
+import http from 'http';
 
 /**
  * Fly.io Bridge:
- * Fly.io injects an internal API at http://_api.internal:4280. We can fetch
- * an OIDC token from /v1/tokens/oidc with the expected audience.
+ * Fly.io exposes its internal Machines API via a Unix socket at `/.fly/api`.
+ * We must request an OIDC token from `http://localhost/v1/tokens/oidc`.
  */
 const fetchFlyToken = async () => {
   const audience = process.env.FLY_OIDC_AUD;
@@ -15,22 +16,49 @@ const fetchFlyToken = async () => {
 
   console.log('--- Fetching Fly.io OIDC Token ---');
   try {
-    const tokenUrl = `http://_api.internal:4280/v1/tokens/oidc?aud=${encodeURIComponent(audience)}`;
-    const response = await fetch(tokenUrl);
+    const token = await new Promise((resolve, reject) => {
+      const payload = JSON.stringify({ aud: audience });
+      const req = http.request({
+        socketPath: '/.fly/api',
+        path: '/v1/tokens/oidc',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        }
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const parsed = JSON.parse(data);
+              // The Fly API returns a JSON field named "oidc_token" or similar, 
+              // but often even if the token is literal, we should handle if it is wrapped.
+              // We'll extract either a field we're looking for, or fallback to data directly.
+              resolve(parsed.oidc_token || parsed.token || data);
+            } catch (e) {
+              // If it's not JSON, assume raw text
+              resolve(data);
+            }
+          } else {
+            reject(new Error(`Failed to fetch Fly.io token: ${res.statusCode} - ${data}`));
+          }
+        });
+      });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Failed to fetch Fly.io token: ${response.statusText} - ${errText}`);
-    }
-
-    const token = await response.text();
+      req.on('error', reject);
+      req.write(payload);
+      req.end();
+    });
 
     if (!token) {
       throw new Error('Fly.io did not return any token.');
     }
 
+    // Google expects a JSON file with an `access_token` key but value must be JUST the token string.
     await writeFile('/tmp/fly-token.json', JSON.stringify({
-      access_token: token
+      access_token: typeof token === 'string' ? token.trim() : String(token).trim()
     }));
 
     console.log('--- Fly.io Token saved to /tmp/fly-token.json ---');

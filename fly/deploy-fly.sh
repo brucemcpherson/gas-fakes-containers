@@ -54,8 +54,13 @@ gcloud iam workload-identity-pools describe "$GCP_POOL_ID" --location="global" -
         --display-name="Fly.io Machines Pool" \
         --quiet >/dev/null
 
-# Fly OIDC issuer
-ISSUER_URI="https://fly.io/oidc"
+# Fly OIDC issuer (dynamically derived from personal org)
+ORG_NAME=$(fly orgs list -j | jq -r '.personal' || echo "")
+ORG_SLUG=$(echo "$ORG_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+if [ -z "$ORG_SLUG" ] || [ "$ORG_SLUG" = "null" ]; then
+    ORG_SLUG="personal" # fallback
+fi
+ISSUER_URI="https://oidc.fly.io/$ORG_SLUG"
 # The expected audience is the full provider URL
 AUDIENCE="https://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$GCP_POOL_ID/providers/$GCP_PROVIDER_ID"
 
@@ -117,9 +122,9 @@ done < .env
 echo "--- Setting App Secrets ---"
 fly secrets set "${ENV_VARS[@]}" -a "$FLY_APP_NAME" >/dev/null 2>&1 || true
 
-# Clean up previous machines with 'Destroyed' or 'replaced' state
+# Clean up previous machines with any state to ensure a clean run
 echo "--- Cleaning up previous machines ---"
-for machine in $(fly machines list -a "$FLY_APP_NAME" -j | jq -r '.[] | select(.state=="destroyed" or .state=="replaced") | .id' 2>/dev/null || echo ""); do
+for machine in $(fly machines list -a "$FLY_APP_NAME" -j 2>/dev/null | jq -r '.[] | .id' || echo ""); do
     [ -n "$machine" ] && fly machines destroy "$machine" -a "$FLY_APP_NAME" --force >/dev/null 2>&1 || true
 done
 
@@ -128,6 +133,7 @@ echo "--- Building and Running Machine (Tail logs automatically) ---"
 # Fly CLI streams out a bunch of lines. We capture them to extract the Machine ID.
 OUTPUT=$(fly machine run . -a "$FLY_APP_NAME" -r "$FLY_REGION" \
     --name "gas-fakes-job-$(jot -r 1 100 999 2>/dev/null || echo $RANDOM)" \
+    --restart no \
     --detach)
 
 echo "$OUTPUT"
@@ -146,7 +152,9 @@ LOG_PID=$!
 
 # Wait for machine to finish (stop or destroy)
 while true; do
-    STATE=$(fly machine status "$MACHINE_ID" -a "$FLY_APP_NAME" -j 2>/dev/null | jq -r '.state' || echo "unknown")
+    # Poll machine status using a more robust check
+    RAW_STATUS=$(fly machine status "$MACHINE_ID" -a "$FLY_APP_NAME" -j 2>/dev/null)
+    STATE=$(echo "$RAW_STATUS" | jq -r '.state' 2>/dev/null || echo "unknown")
     if [ "$STATE" = "stopped" ] || [ "$STATE" = "destroyed" ] || [ "$STATE" = "replaced" ]; then
         echo "--- Machine finished with state: $STATE ---"
         break

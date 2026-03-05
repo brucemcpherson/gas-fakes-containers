@@ -26,8 +26,7 @@ GCP_POOL_ID="ibm-pool"
 GCP_PROVIDER_ID="ibm-provider"
 
 # Auto-detect GSA from local .env
-GSA_NAME=$(grep "GOOGLE_SERVICE_ACCOUNT_NAME" .env | cut -d'=' -f2 | tr -d '"
-')
+GSA_NAME=$(grep "GOOGLE_SERVICE_ACCOUNT_NAME" .env | cut -d'=' -f2 | tr -d '"\r')
 GSA_EMAIL="${GSA_NAME}@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
 PROJECT_NUMBER=$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')
 
@@ -158,7 +157,7 @@ ENV_ARGS=("--env" "GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT" "--env" "GOOGLE_C
 # Load other variables from .env
 while IFS='=' read -r key val; do
     [[ "$key" =~ ^#.* ]] || [[ -z "$key" ]] || [[ "$key" == "GOOGLE_CLOUD_PROJECT" ]] && continue
-    val=$(echo $val | sed 's/^"//;s/"$//')
+    val=$(echo "$val" | sed 's/^"//;s/"$//')
     ENV_ARGS+=("--env" "$key=$val")
 done < .env
 
@@ -176,6 +175,11 @@ fi
 # --- 7. EXECUTE AND MONITOR ---
 echo "--- Starting Execution ---"
 JOB_RUN_NAME=$(ibmcloud ce jobrun submit --job "$CE_JOB_NAME" --output json | jq -r .metadata.name)
+
+if [ -z "$JOB_RUN_NAME" ] || [ "$JOB_RUN_NAME" == "null" ]; then
+    echo "Error: Failed to submit job run."
+    exit 1
+fi
 
 echo "--- JobRun Started: $JOB_RUN_NAME ---"
 echo "--- Tailing Logs ---"

@@ -1,8 +1,6 @@
 # Google Apps Script Containers (Fakes)
 
-This repository demonstrates how to run Google Apps Script (GAS) logic within containers on Google Cloud Platform (GCP) and AWS. It utilizes the [`@mcpher/gas-fakes`](https://www.npmjs.com/package/@mcpher/gas-fakes) library to simulate the Apps Script environment (Drive, Sheets, etc.) in a Node.js runtime.
-
-The project provides deployment paths for **Kubernetes (GKE)**, **Cloud Run Jobs**, and **AWS Lambda**.
+This repository demonstrates how to run Google Apps Script (GAS) logic within containers across all major cloud providers. It utilizes the [`@mcpher/gas-fakes`](https://www.npmjs.com/package/@mcpher/gas-fakes) library to simulate the Apps Script environment (Drive, Sheets, etc.) in a Node.js runtime.
 
 ---
 
@@ -16,83 +14,120 @@ The project provides deployment paths for **Kubernetes (GKE)**, **Cloud Run Jobs
   ```bash
   npm install -g @mcpher/gas-fakes
   ```
-- **For AWS Path**: 
-  - AWS CLI installed and configured (`aws configure`).
 
 ## Environment Configuration
 
-Deployment paths rely on a `.env` file located in their respective directories (`k8s/.env`, `cloudrun/.env`, `aws-lambda/.env`). These files are ignored by Git.
+Deployment paths rely on a `.env` file located in their respective directories. These files are ignored by Git.
 
 The `.env` file and the necessary Google Service Account (GSA) are created and configured using the `gas-fakes` CLI:
-1. **Initialize**: Run `gas-fakes init` to set up the project structure and **automatically create the required Google Service Account**. 
-2. **Authenticate**: Run `gas-fakes auth` to configure the necessary GCP credentials and project settings.
-
-For more details on setting up the base environment, refer to the documentation in the [gas-fakes](https://github.com/brucemcpherson/gas-fakes) repository.
+1. **Initialize**: Run `gas-fakes init` to set up the project structure. 
+2. **Authenticate**: Run `gas-fakes auth` to configure the necessary GCP credentials.
 
 ---
 
-## 1. Kubernetes (GKE) Deployment
+## Supported Platforms Summary
 
-The Kubernetes path uses **GKE Autopilot** and **Workload Identity** to securely authenticate the container.
-
-### Cluster Management
-```bash
-cd k8s
-./manage-cluster.sh up   # Create GKE Autopilot cluster
-./manage-cluster.sh down # Delete cluster when finished
-```
-
-### Deploying the Job
-```bash
-cd k8s
-./deploy-k8s.sh
-```
+| Environment | Timeout | Cloud Provider | Key Feature | Identity Strategy |
+| :--- | :--- | :--- | :--- | :--- |
+| **[Local](./local)** | Unlimited | Local Machine | Best for Dev/Debug and sandboxing AI generated code | User Auth / ADC |
+| **[Cloud Run](./cloudrun)** | 60 mins | Google Cloud | Native GCP Identity | Service Account |
+| **[GKE](./k8s)** | Unlimited | Google Cloud | Total Control | Workload Identity |
+| **[AWS Lambda](./aws-lambda)** | 15 mins | AWS | Event-Driven | Workload Identity Federation (WIF)|
+| **[Azure ACA](./azure-aca)** | 24 hours | Microsoft Azure | Long-Running Tasks | WIF + Identity Bridge |
+| **[IBM Code Engine](./ibm-code-engine)** | 24 hours | IBM Cloud | Generous Free Tier | WIF + App ID |
+| **[Fly.io](./fly)** | Unlimited | Fly.io | Fast MicroVMs | WIF + OIDC Tokens |
 
 ---
 
-## 2. Cloud Run Deployment
-
-The Cloud Run path is ideal for serverless execution of short-lived tasks.
-
-```bash
-cd cloudrun
-./deploy-cloudrun.sh
-```
+## 1. Local Node.js Environment
+Ideal for development, complex debugging, and one-off administrative tasks.
+- **Pros:** Unlimited runtime; full IDE support; access to all NPM packages.
+- **Usage:**
+  ```bash
+  cd local
+  npm install
+  node example.js
+  ```
 
 ---
 
-## 3. AWS Lambda Deployment (Cross-Cloud)
+## 2. Google Cloud Run Deployment
+The most natural cloud progression for GAS logic within the Google ecosystem.
+- **Pros:** Fast setup; 60-minute timeout; native GCP identity.
+- **Usage:**
+  ```bash
+  cd cloudrun
+  ./deploy-cloudrun.sh
+  ```
 
-This path runs your GAS container on AWS while securely accessing Google Workspace via **Workload Identity Federation (WIF)**—no service account keys required.
+---
 
-### One-time Secret Setup
-To allow Google Cloud Build to push images to your AWS registry, you must store your AWS keys in Google Secret Manager:
-```bash
-cd aws-lambda
-./setup-gcp-secrets.sh
-```
+## 3. Google Kubernetes Engine (GKE)
+Total control over the container lifecycle for high-volume pipelines.
+- **Pros:** Truly unlimited runtime; GKE Autopilot management.
+- **Usage:**
+  ```bash
+  cd k8s
+  ./manage-cluster.sh up
+  ./deploy-k8s.sh
+  ```
 
-### Deploying the Function
-The `deploy-lambda.sh` script automates the entire cross-cloud handshake:
-1. **Builds** the image via Google Cloud Build and **pushes** it directly to AWS ECR (no local Docker required).
-2. **Configures WIF** in GCP to trust your AWS account.
-3. **Deploys** the Lambda function and configures all environment variables.
-4. **Invokes** the function and **tails the logs** to your terminal.
+---
 
-```bash
-cd aws-lambda
-./deploy-lambda.sh
-```
+## 4. AWS Lambda Deployment (Cross-Cloud)
+For teams deeply invested in the Amazon ecosystem or event-driven automation.
+- **Pros:** High reliability; extremely cost-effective.
+- **Usage:**
+  ```bash
+  cd aws-lambda
+  ./setup-gcp-secrets.sh # One-time
+  ./deploy-lambda.sh
+  ```
+
+---
+
+## 5. Azure Container Apps (ACA) Jobs
+The best solution for serverless tasks that need to run for up to 24 hours.
+- **Pros:** 24-hour execution window; serverless scaling.
+- **Usage:**
+  ```bash
+  cd azure-aca
+  ./setup-azure-secrets.sh # One-time
+  ./deploy-aca.sh
+  ```
+
+---
+
+## 6. IBM Cloud Code Engine
+Compute-intensive GAS tasks that benefit from generous free tiers.
+- **Pros:** 24-hour runtime; extremely high memory/CPU limits.
+- **Usage:**
+  ```bash
+  cd ibm-code-engine
+  ./setup-ibm-secrets.sh # One-time
+  ./deploy-ibm.sh
+  ```
+
+---
+
+## 7. Fly.io Machines
+Fast, lightweight Firecracker microVMs that launch in seconds.
+- **Pros:** Native OIDC support; globally distributed; unlimited runtime.
+- **Usage:**
+  ```bash
+  cd fly
+  ./deploy-fly.sh
+  ```
 
 ---
 
 ## Project Structure
 
-- `k8s/`, `cloudrun/`, `aws-lambda/`: Platform-specific configuration and deployment scripts.
-- `containerrun.js`: The entry point for the container. It detects the environment (e.g., Lambda) to handle process lifecycle correctly.
-- `example.js`: The core logic using `@mcpher/gas-fakes`. In this example, it identifies duplicate files on Google Drive. 
+- `[platform]/`: Platform-specific configuration and deployment scripts.
+- `containerrun.js`: Entry point that detects environment and handles process lifecycle.
+- `example.js`: Core logic using `@mcpher/gas-fakes` (identifies duplicate files on Drive).
 - `Dockerfile`: Multi-stage build to package the Node.js application.
 
 ## How it Works
 
-The `@mcpher/gas-fakes` library provides global objects like `DriveApp` and `SpreadsheetApp` that mimic the GAS environment. It uses the ambient credentials of the environment (GKE Workload Identity, Cloud Run Service Account, or AWS WIF) to interact with live Google APIs.
+The `@mcpher/gas-fakes` library provides global objects like `DriveApp` and `SpreadsheetApp` that mimic the GAS environment. It uses the ambient credentials of the environment (Workload Identity, Service Accounts, or WIF) to interact with live Google APIs securely.
