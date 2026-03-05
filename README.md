@@ -23,6 +23,17 @@ The `.env` file and the necessary Google Service Account (GSA) are created and c
 1. **Initialize**: Run `gas-fakes init` to set up the project structure. 
 2. **Authenticate**: Run `gas-fakes auth` to configure the necessary GCP credentials.
 
+## Build Automation & Artifact Stores
+
+A key principle of this project is that **you do not need Docker installed locally**. 
+
+Instead, we use **Google Cloud Build** as a serverless build engine. Each deployment script (`deploy-*.sh`) submits the local source code to GCP, where:
+1.  **Cloud Build** packages the code into a container image using the project's `Dockerfile`.
+2.  The resulting image is stored in **Google Artifact Registry**.
+3.  For Cross-Cloud paths (AWS, Azure, IBM), Cloud Build then securely **pushes** the image directly to the destination registry (e.g., AWS ECR or Azure ACR) using credentials stored in GCP Secret Manager.
+
+This ensures builds are consistent, fast, and secure, regardless of your local machine's operating system or configuration.
+
 ---
 
 ## Supported Platforms Summary
