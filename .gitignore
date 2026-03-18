@@ -4,4 +4,5 @@
 **/gasfakes.json
 kubernetes.yaml
 **/.google-credentials.json
+**/*.jwt
   

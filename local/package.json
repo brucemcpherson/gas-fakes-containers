@@ -2,6 +2,9 @@
   "engines": {
     "node": ">=20.11.0"
   },
+  "overrides": {
+    "glob": "^13.0.6"
+  },
   "type": "module",
   "name": "gas-fakes-local",
   "version": "1.0.2",
@@ -11,6 +14,6 @@
   "repository": "github:brucemcpherson/gas-fakes-containers",
   "homepage": "https://ramblings.mcpher.com/a-proof-of-concept-implementation-of-apps-script-environment-on-node/",
   "dependencies": {
-    "@mcpher/gas-fakes": "^2.2.0"
+    "@mcpher/gas-fakes": "latest"
   }
 }

@@ -42,6 +42,7 @@ This ensures builds are consistent, fast, and secure, regardless of your local m
 | :--- | :--- | :--- | :--- | :--- |
 | **[Local](./local)** | Unlimited | Local Machine | Best for Dev/Debug and sandboxing AI generated code | User Auth / ADC |
 | **[Cloud Run](./cloudrun)** | 60 mins | Google Cloud | Native GCP Identity | Service Account |
+| **[Cloud Run + MS Graph](./cloudrun-msgraph)** | 60 mins | Google Cloud | Microsoft Graph Integration | Service Account + JWT Cache |
 | **[GKE](./k8s)** | Unlimited | Google Cloud | Total Control | Workload Identity |
 | **[AWS Lambda](./aws-lambda)** | 15 mins | AWS | Event-Driven | Workload Identity Federation (WIF)|
 | **[Azure ACA](./azure-aca)** | 24 hours | Microsoft Azure | Long-Running Tasks | WIF + Identity Bridge |
@@ -73,7 +74,19 @@ The most natural cloud progression for GAS logic within the Google ecosystem.
 
 ---
 
-## 3. Google Kubernetes Engine (GKE)
+## 3. Google Cloud Run + MS Graph Deployment
+Integrating Microsoft Graph (OneDrive/SharePoint) natively within Cloud Run jobs using GCP Secret Manager.
+- **Pros:** Access Microsoft resources seamlessly using locally cached tokens; native GCP identity.
+- **Usage:**
+  ```bash
+  cd cloudrun-msgraph
+  ./setup-gcp-secrets.sh # One-time
+  ./deploy-cloudrun.sh
+  ```
+
+---
+
+## 4. Google Kubernetes Engine (GKE)
 Total control over the container lifecycle for high-volume pipelines.
 - **Pros:** Truly unlimited runtime; GKE Autopilot management.
 - **Usage:**
@@ -85,7 +98,7 @@ Total control over the container lifecycle for high-volume pipelines.
 
 ---
 
-## 4. AWS Lambda Deployment (Cross-Cloud)
+## 5. AWS Lambda Deployment (Cross-Cloud)
 For teams deeply invested in the Amazon ecosystem or event-driven automation.
 - **Pros:** High reliability; extremely cost-effective.
 - **Usage:**
@@ -97,7 +110,7 @@ For teams deeply invested in the Amazon ecosystem or event-driven automation.
 
 ---
 
-## 5. Azure Container Apps (ACA) Jobs
+## 6. Azure Container Apps (ACA) Jobs
 The best solution for serverless tasks that need to run for up to 24 hours.
 - **Pros:** 24-hour execution window; serverless scaling.
 - **Usage:**
@@ -109,7 +122,7 @@ The best solution for serverless tasks that need to run for up to 24 hours.
 
 ---
 
-## 6. IBM Cloud Code Engine
+## 7. IBM Cloud Code Engine
 Compute-intensive GAS tasks that benefit from generous free tiers.
 - **Pros:** 24-hour runtime; extremely high memory/CPU limits.
 - **Usage:**
@@ -121,7 +134,7 @@ Compute-intensive GAS tasks that benefit from generous free tiers.
 
 ---
 
-## 7. Fly.io Machines
+## 8. Fly.io Machines
 Fast, lightweight Firecracker microVMs that launch in seconds.
 - **Pros:** Native OIDC support; globally distributed; unlimited runtime.
 - **Usage:**

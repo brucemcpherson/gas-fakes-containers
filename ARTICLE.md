@@ -48,7 +48,7 @@ To run GAS logic in a container, we use a three-layer architecture. This system 
 ### 1. The Core Logic (`example.js`)
 This is where your actual Apps Script code lives. It looks and feels exactly like a standard script, using `DriveApp`, `SpreadsheetApp`, and all the normal Apps Script services so far implemented in gas-fakes. It is platform-agnostic; it only knows the Apps Script API. 
 
-The example provided is a long running eample that checks your Drive for duplicate content and writes a summary to a google sheet. You can either use this (by substituting the id of one of your spreadsheets to summarize into) or replace with your own Apps Script code. The example also uses a live Apps Script library to show that even that is supported.
+
 
 ### 2. The Harmonizer (`@mcpher/gas-fakes`)
 This is the invisible "magic" layer. It provides global objects that mimic the Apps Script environment. When your code calls `DriveApp.getFiles()`, the harmonizer intercepts this and uses the standard Google Node.js SDK to talk to the live Google APIs using whatever token is available in the environment.
@@ -79,6 +79,7 @@ Each path in this repository includes a `deploy-*.sh` script that automates the 
 | :--- | :--- | :--- | :--- |
 | **Dev & Debugging** | **[Local](./local)** | Unlimited | Keyless DWD / ADC |
 | **Standard Automation** | **[Cloud Run](./cloudrun)** | 60 mins | Native Service Account |
+| **Microsoft Graph Int.** | **[Cloud Run + MS Graph](./cloudrun-msgraph)** | 60 mins | Service Account + JWT Cache |
 | **AWS Integration** | **[AWS Lambda](./aws-lambda)** | 15 mins | WIF |
 | **Massive Data Jobs** | **[Azure ACA](./azure-aca)** | 24 hours | WIF + Identity Bridge |
 | **High Resource/Free Tier** | **[IBM Code Engine](./ibm-code-engine)** | 24 hours | WIF + App ID |
