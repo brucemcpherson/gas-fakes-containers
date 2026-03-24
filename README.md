@@ -1,4 +1,4 @@
-# Google Apps Script Containers (Fakes)
+# <img src="https://github.com/brucemcpherson/gas-fakes/blob/main/logo.png" alt="gas-fakes logo" width="50" align="top"> Google Apps Script Containers (Fakes)
 
 This repository demonstrates how to run Google Apps Script (GAS) logic within containers across all major cloud providers. It utilizes the [`@mcpher/gas-fakes`](https://www.npmjs.com/package/@mcpher/gas-fakes) library to simulate the Apps Script environment (Drive, Sheets, etc.) in a Node.js runtime.
 
