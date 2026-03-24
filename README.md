@@ -156,7 +156,7 @@ Fast, lightweight Firecracker microVMs that launch in seconds.
 
 The `@mcpher/gas-fakes` library provides global objects like `DriveApp` and `SpreadsheetApp` that mimic the GAS environment. It uses the ambient credentials of the environment (Workload Identity, Service Accounts, or WIF) to interact with live Google APIs securely.
 
-## <img src="./logo.png" alt="gas-fakes logo" width="50" align="top"> Further Reading
+## <img src="https://github.com/brucemcpherson/gas-fakes-containers/blob/main/logo.png" alt="gas-fakes logo" width="50" align="top"> Further Reading
 
 ## Watch the video
 
