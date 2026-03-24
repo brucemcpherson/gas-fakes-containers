@@ -160,7 +160,7 @@ The `@mcpher/gas-fakes` library provides global objects like `DriveApp` and `Spr
 
 ## Watch the video
 
-[![Watch the video](introvideo.png)](https://youtu.be/oEjpIrkYpEM)
+[![Watch the video](https://github.com/brucemcpherson/gas-fakes/blob/main/introvideo.png)](https://youtu.be/oEjpIrkYpEM)
 
 ## Read more docs
 
