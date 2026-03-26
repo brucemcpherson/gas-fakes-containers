@@ -10,7 +10,7 @@ This directory contains setup scripts for authenticating **GitHub Actions** to *
 ## Setup Instructions
 
 ### 1. Initialize your environment
-Before running the setup, ensure your local environment is configured by running these commands in this directory:
+Before running the setup, ensure your appsscript.json contains the scopes you'll need, and the local environment is configured by running these commands in this directory:
 ```bash
 npx gas-fakes init
 npx gas-fakes auth
