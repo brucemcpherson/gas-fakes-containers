@@ -41,6 +41,7 @@ This ensures builds are consistent, fast, and secure, regardless of your local m
 | Environment | Timeout | Cloud Provider | Key Feature | Identity Strategy |
 | :--- | :--- | :--- | :--- | :--- |
 | **[Local](./local)** | Unlimited | Local Machine | Best for Dev/Debug and sandboxing AI generated code | User Auth / ADC |
+| **[GitHub Actions](./github-actions)** | 6 hours | GitHub | Keyless CI/CD automation | WIF (Workload Identity) |
 | **[Cloud Run](./cloudrun)** | 60 mins | Google Cloud | Native GCP Identity | Service Account |
 | **[Cloud Run + MS Graph](./cloudrun-msgraph)** | 60 mins | Google Cloud | Microsoft Graph Integration | Service Account + JWT Cache |
 | **[GKE](./k8s)** | Unlimited | Google Cloud | Total Control | Workload Identity |
@@ -63,7 +64,19 @@ Ideal for development, complex debugging, and one-off administrative tasks.
 
 ---
 
-## 2. Google Cloud Run Deployment
+## 2. GitHub Actions CI/CD
+Automate your GAS logic directly within your GitHub pipelines with zero keys.
+- **Pros:** Completely keyless; automatically syncs `.env` to GitHub via `gh` CLI; handles OIDC-to-GCP token exchange.
+- **Usage:**
+  ```bash
+  cd github-actions
+  ./setup-wif.sh
+  # Then check .github/workflows/gas-fakes.yml
+  ```
+
+---
+
+## 3. Google Cloud Run Deployment
 The most natural cloud progression for GAS logic within the Google ecosystem.
 - **Pros:** Fast setup; 60-minute timeout; native GCP identity.
 - **Usage:**
