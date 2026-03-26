@@ -4,11 +4,18 @@ set -e
 # --- 1. CONFIGURATION ---
 echo "--- GCP Workload Identity Federation Setup for GitHub Actions ---"
 
+# Detect which .env to use
+if [ -f ".env" ]; then
+    ENV_FILE=".env"
+elif [ -f "../.env" ]; then
+    ENV_FILE="../.env"
+fi
+
 # Try to auto-detect PROJECT_ID from gcloud
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
-if [ -z "$PROJECT_ID" ]; then
-  # Fallback to .env in root
-  PROJECT_ID=$(grep "GOOGLE_CLOUD_PROJECT" ../.env | cut -d'=' -f2 | tr -d '"\r')
+if [ -z "$PROJECT_ID" ] && [ -n "$ENV_FILE" ]; then
+  # Fallback to detected .env
+  PROJECT_ID=$(grep "GOOGLE_CLOUD_PROJECT" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"\r')
 fi
 
 if [ -z "$PROJECT_ID" ]; then
@@ -18,10 +25,10 @@ fi
 
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
 
-# Auto-detect GSA from local .env or root .env
-GSA_NAME=$(grep "GOOGLE_SERVICE_ACCOUNT_NAME" .env 2>/dev/null | cut -d'=' -f2 | tr -d '"\r')
-if [ -z "$GSA_NAME" ]; then
-    GSA_NAME=$(grep "GOOGLE_SERVICE_ACCOUNT_NAME" ../.env 2>/dev/null | cut -d'=' -f2 | tr -d '"\r')
+# Auto-detect GSA from detected .env
+GSA_NAME=""
+if [ -n "$ENV_FILE" ]; then
+    GSA_NAME=$(grep "GOOGLE_SERVICE_ACCOUNT_NAME" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"\r')
 fi
 
 if [ -z "$GSA_NAME" ]; then
@@ -93,13 +100,46 @@ WIF_PROVIDER_NAME="projects/$PROJECT_NUMBER/locations/global/workloadIdentityPoo
 
 echo -e "\n--- Setup Complete! ---"
 
-# --- 6. AUTOMATICALLY SET GITHUB SECRETS (Optional) ---
+# --- 6. AUTOMATICALLY SET GITHUB SECRETS & VARIABLES (Optional) ---
 if command -v gh &> /dev/null && gh auth status &> /dev/null; then
-    echo "--- GitHub CLI detected and authenticated. Setting secrets automatically... ---"
+    echo "--- GitHub CLI detected and authenticated. Setting secrets and variables... ---"
+    
+    # Core WIF Secrets
     gh secret set WIF_PROVIDER_NAME --body "$WIF_PROVIDER_NAME"
     gh secret set WIF_SERVICE_ACCOUNT --body "$GSA_EMAIL"
-    gh secret set GOOGLE_CLOUD_PROJECT --body "$PROJECT_ID"
-    echo "Secrets WIF_PROVIDER_NAME, WIF_SERVICE_ACCOUNT, and GOOGLE_CLOUD_PROJECT have been set."
+    gh variable set GOOGLE_CLOUD_PROJECT --body "$PROJECT_ID"
+    
+    # Auto-detect workspace subject if possible
+    WORKSPACE_SUBJECT=$(gcloud config get-value account 2>/dev/null || echo "")
+    if [ -n "$WORKSPACE_SUBJECT" ]; then
+        gh secret set GOOGLE_WORKSPACE_SUBJECT --body "$WORKSPACE_SUBJECT"
+    fi
+
+    # Read .env and set other variables
+    if [ -n "$ENV_FILE" ]; then
+        echo "Reading variables from $ENV_FILE..."
+        while IFS='=' read -r key val; do
+            # Skip comments, empty lines, and already set core vars
+            [[ "$key" =~ ^#.* ]] || [[ -z "$key" ]] || \
+            [[ "$key" == "GOOGLE_CLOUD_PROJECT" ]] || \
+            [[ "$key" == "GOOGLE_SERVICE_ACCOUNT_NAME" ]] || \
+            [[ "$key" == "GOOGLE_WORKSPACE_SUBJECT" ]] && continue
+            
+            # Clean up value
+            val=$(echo "$val" | sed 's/^"//;s/"$//')
+            
+            # Decide if it's a secret or variable (heuristic: if it contains 'KEY', 'TOKEN', or 'SECRET')
+            if [[ "$key" =~ (KEY|TOKEN|SECRET) ]]; then
+                echo "Setting secret: $key"
+                gh secret set "$key" --body "$val"
+            else
+                echo "Setting variable: $key"
+                gh variable set "$key" --body "$val"
+            fi
+        done < "$ENV_FILE"
+    fi
+    
+    echo "GitHub configuration complete."
 else
     echo "Add these values to your GitHub Repository Secrets/Variables manually (or install 'gh' and login):"
     echo "WIF_PROVIDER_NAME: $WIF_PROVIDER_NAME"

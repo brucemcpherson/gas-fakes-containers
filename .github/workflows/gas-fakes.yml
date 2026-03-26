@@ -22,6 +22,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER_NAME }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'
 
       - name: 'Set up Node.js'
         uses: actions/setup-node@v4
@@ -40,5 +41,15 @@ jobs:
           cd github-actions
           node ./containerrun.js
         env:
-          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
-          # Add any other required env vars from your .env as secrets here
+          DEBUG: 'true'
+          GOOGLE_CLOUD_PROJECT: ${{ vars.GOOGLE_CLOUD_PROJECT }}
+          GOOGLE_WORKSPACE_SUBJECT: ${{ secrets.GOOGLE_WORKSPACE_SUBJECT }}
+          AUTH_TYPE: ${{ vars.AUTH_TYPE || 'dwd' }}
+          GOOGLE_SERVICE_ACCOUNT_NAME: ${{ vars.GOOGLE_SERVICE_ACCOUNT_NAME || 'gas-fakes-sa' }}
+          DEFAULT_SCOPES: ${{ vars.DEFAULT_SCOPES }}
+          EXTRA_SCOPES: ${{ vars.EXTRA_SCOPES }}
+          UPSTASH_REDIS_REST_URL: ${{ vars.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
+          # Add other variables as needed from repository secrets/vars
